@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pink-50:  #FDF2F8;
+  --pink-100: #FCE7F3;
+  --pink-200: #FBCFE8;
+  --pink-300: #F9A8D4;
+  --pink-400: #F472B6;
+  --pink-500: #EC4899;
+  --pink-600: #DB2777;
+  --pink-700: #BE185D;
+  --pink-800: #9D174D;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--pink-50);
+  color: #1a1a1a;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+input, textarea {
+  outline: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  width: 100%;
+  background: white;
+  transition: border-color 0.15s;
+  color: #1a1a1a;
+}
+input:focus, textarea:focus {
+  border-color: var(--pink-400);
+}
