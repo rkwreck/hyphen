@@ -11,19 +11,21 @@ export async function POST(req: NextRequest) {
   const file = formData.get('image') as File
   const userId = formData.get('userId') as string
 
-  if (!file || !userId) return NextResponse.json({ reply: 'Missing image or user.' }, { status: 400 })
+  if (!file || !userId) return NextResponse.json({ error: 'Missing data' }, { status: 400 })
 
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
   const mimeType = file.type || 'image/jpeg'
 
+  // Upload image to storage
   const fileName = `${userId}/${Date.now()}.jpg`
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('deal-images')
     .upload(fileName, Buffer.from(bytes), { contentType: mimeType })
 
   const imageUrl = uploadError ? null : supabase.storage.from('deal-images').getPublicUrl(fileName).data.publicUrl
 
+  // Parse with Gemini
   const geminiRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
@@ -34,13 +36,13 @@ export async function POST(req: NextRequest) {
           parts: [
             { inline_data: { mime_type: mimeType, data: base64 } },
             {
-              text: `Extract discount information from this image and return ONLY valid JSON:
+              text: `Extract discount information from this image. Return ONLY valid JSON with no markdown:
 {
-  "store_name": "store name or null",
-  "discount_value": "e.g. 20% off, $5 off, BOGO or null",
-  "discount_code": "promo code if visible or null",
-  "category": "groceries | dining | retail | travel | entertainment | other",
-  "expiry_date": "YYYY-MM-DD format or null"
+  "store_name": "brand or store name from logo/text, or null if unclear",
+  "discount_value": "e.g. 20% off, $5 off, $50 gift card, or null if unclear",
+  "discount_code": "promo code if visible, or null",
+  "category": "gift_card | coupon | promo_code | groceries | dining | retail | travel | entertainment | other",
+  "expiry_date": "YYYY-MM-DD if visible, or null"
 }`,
             },
           ],
@@ -51,22 +53,12 @@ export async function POST(req: NextRequest) {
   )
 
   const geminiData = await geminiRes.json()
-  let parsed: any = {}
+  let parsed: any = { store_name: null, discount_value: null, discount_code: null, category: 'other', expiry_date: null }
   try {
     let text = geminiData.candidates[0].content.parts[0].text.trim()
     text = text.replace(/```json|```/g, '').trim()
     parsed = JSON.parse(text)
-  } catch {
-    return NextResponse.json({ reply: "Couldn't parse that image. Try a clearer photo." })
-  }
+  } catch {}
 
-  await supabase.from('discounts').insert({
-    user_id: userId,
-    image_url: imageUrl,
-    ...parsed,
-  })
-
-  return NextResponse.json({
-    reply: `Saved! ${parsed.store_name ? `Store: ${parsed.store_name}` : ''} ${parsed.discount_value ? `· ${parsed.discount_value}` : ''} ${parsed.expiry_date ? `· Expires ${parsed.expiry_date}` : ''}`.trim(),
-  })
+  return NextResponse.json({ parsed: { ...parsed, image_url: imageUrl } })
 }

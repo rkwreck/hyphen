@@ -53,7 +53,7 @@ export default function ChatPage() {
   async function sendImage(file: File) {
     if (!userId) return
     const preview = URL.createObjectURL(file)
-    setMessages(prev => [...prev, { role: 'user', text: 'Here's a deal photo:', imagePreview: preview }])
+    setMessages(prev => [...prev, { role: 'user', text: 'Here is a deal photo:', imagePreview: preview }])
     setLoading(true)
 
     const formData = new FormData()

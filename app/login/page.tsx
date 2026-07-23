@@ -23,34 +23,26 @@ export default function LoginPage() {
 
   async function handleGoogle() {
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
-    if (error) console.error(error)
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--pink-50)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold" style={{ color: 'var(--pink-700)' }}>Penni</h1>
+          <h1 className="text-3xl font-semibold" style={{ color: 'var(--pink-700)' }}>Hyphen</h1>
           <p className="text-sm mt-1" style={{ color: '#6b7280' }}>Your personal deal keeper</p>
         </div>
         <div className="bg-white rounded-2xl p-8 border" style={{ borderColor: 'var(--pink-100)' }}>
           <h2 className="text-lg font-medium mb-6">Sign in</h2>
           {error && <p className="text-sm mb-4 p-3 rounded-lg" style={{ background: '#FEF2F2', color: '#991B1B' }}>{error}</p>}
-          <button
-            onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border text-sm font-medium mb-4"
-            style={{ borderColor: '#e5e7eb', color: '#374151' }}
-          >
+          <button onClick={handleGoogle} className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border text-sm font-medium mb-4" style={{ borderColor: '#e5e7eb', color: '#374151' }}>
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/>
               <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
