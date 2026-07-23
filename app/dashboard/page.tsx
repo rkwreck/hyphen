@@ -37,10 +37,9 @@ export default function DashboardPage() {
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
-      setShowUserMenu(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
   }, [])
 
   async function fetchDeals(supabase: any, uid: string) {
@@ -74,9 +73,11 @@ export default function DashboardPage() {
   }
 
   async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch(_) {}
+    window.location.href = '/login'
   }
 
   function handleDealAdded(deal: Discount) {
