@@ -9,6 +9,18 @@ import AddDealModal from '@/components/AddDealModal'
 type Filter = 'all' | 'gift_card' | 'coupon' | 'promo_code' | 'used'
 type Sort = 'expiry' | 'store'
 
+const C = {
+  bg: 'var(--p50)',
+  bgHover: 'var(--p100)',
+  border: 'var(--p200)',
+  borderStrong: 'var(--p300)',
+  text: 'var(--p700)',
+  textLight: 'var(--p500)',
+  active: 'var(--p600)',
+  activeHover: 'var(--p700)',
+  white: 'white',
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [deals, setDeals] = useState<Discount[]>([])
@@ -18,6 +30,7 @@ export default function DashboardPage() {
   const [showAddDeal, setShowAddDeal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [userInitial, setUserInitial] = useState('?')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
@@ -27,6 +40,7 @@ export default function DashboardPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push('/login'); return }
       setUserId(session.user.id)
+      setAccessToken(session.access_token)
       const email = session.user.email || ''
       const name = session.user.user_metadata?.full_name || ''
       setUserInitial((name || email).charAt(0).toUpperCase())
@@ -73,10 +87,7 @@ export default function DashboardPage() {
   }
 
   async function handleLogout() {
-    try {
-      const supabase = createClient()
-      await supabase.auth.signOut()
-    } catch(_) {}
+    try { const supabase = createClient(); await supabase.auth.signOut() } catch (_) {}
     window.location.href = '/login'
   }
 
@@ -108,42 +119,43 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--pink-50)' }}>
-      {showAddDeal && userId && (
-        <AddDealModal userId={userId} onClose={() => setShowAddDeal(false)} onAdded={handleDealAdded} />
+    <div className="min-h-screen" style={{ background: C.bg }}>
+      {showAddDeal && userId && accessToken && (
+        <AddDealModal userId={userId} accessToken={accessToken} onClose={() => setShowAddDeal(false)} onAdded={handleDealAdded} />
       )}
 
       <div className="max-w-5xl mx-auto px-4 py-5">
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-xl font-semibold" style={{ color: 'var(--pink-700)' }}>Hyphen</span>
-          <div className="flex items-center gap-2">
+        {/* Topbar */}
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-xl font-bold" style={{ color: C.active }}>Hyphen</span>
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/dashboard/chat')}
               className="text-sm px-4 py-2 rounded-xl border font-medium transition-colors"
-              style={{ borderColor: 'var(--pink-300)', background: 'var(--pink-50)', color: 'var(--pink-700)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--pink-100)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--pink-50)')}
+              style={{ borderColor: C.active, background: C.white, color: C.active }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.bgHover }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.white }}
             >
               Talk to Penni
             </button>
             <div className="relative">
               <button
                 onClick={e => { e.stopPropagation(); setShowUserMenu(v => !v) }}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold transition-colors"
-                style={{ background: 'var(--pink-600)' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--pink-700)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'var(--pink-600)')}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors"
+                style={{ background: C.active }}
+                onMouseEnter={e => (e.currentTarget.style.background = C.activeHover)}
+                onMouseLeave={e => (e.currentTarget.style.background = C.active)}
               >
                 {userInitial}
               </button>
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-36 bg-white rounded-xl border shadow-lg z-50 overflow-hidden" style={{ borderColor: 'var(--pink-100)' }}>
+                <div className="absolute right-0 mt-2 w-36 bg-white rounded-xl border shadow-lg z-50 overflow-hidden" style={{ borderColor: C.border }}>
                   <button
                     onClick={e => { e.stopPropagation(); handleLogout() }}
                     className="w-full text-left px-4 py-3 text-sm transition-colors"
                     style={{ color: '#374151' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--pink-50)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'white')}
+                    onMouseEnter={e => (e.currentTarget.style.background = C.bgHover)}
+                    onMouseLeave={e => (e.currentTarget.style.background = C.white)}
                   >
                     Log out
                   </button>
@@ -153,6 +165,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Tabs + Sort */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex gap-2 flex-wrap">
             {tabs.map(tab => (
@@ -161,11 +174,11 @@ export default function DashboardPage() {
                 onClick={() => setFilter(tab.value)}
                 className="px-4 py-1.5 rounded-full text-sm font-medium border transition-colors"
                 style={filter === tab.value
-                  ? { background: 'var(--pink-600)', color: 'white', borderColor: 'var(--pink-600)' }
-                  : { background: 'white', color: 'var(--pink-700)', borderColor: 'var(--pink-200)' }
+                  ? { background: C.active, color: C.white, borderColor: C.active }
+                  : { background: C.white, color: C.text, borderColor: C.border }
                 }
-                onMouseEnter={e => { if (filter !== tab.value) e.currentTarget.style.background = 'var(--pink-100)' }}
-                onMouseLeave={e => { if (filter !== tab.value) e.currentTarget.style.background = 'white' }}
+                onMouseEnter={e => { if (filter !== tab.value) { e.currentTarget.style.background = C.bgHover; e.currentTarget.style.borderColor = C.borderStrong } }}
+                onMouseLeave={e => { if (filter !== tab.value) { e.currentTarget.style.background = C.white; e.currentTarget.style.borderColor = C.border } }}
               >
                 {tab.label}
               </button>
@@ -175,10 +188,10 @@ export default function DashboardPage() {
           <div className="relative" ref={sortRef}>
             <button
               onClick={e => { e.stopPropagation(); setSortOpen(v => !v) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm transition-colors"
-              style={{ color: '#6b7280' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--pink-100)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors border"
+              style={{ color: C.text, borderColor: C.border, background: C.white }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.bgHover; e.currentTarget.style.borderColor = C.borderStrong }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.white; e.currentTarget.style.borderColor = C.border }}
             >
               <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M3 6h18M6 12h12M9 18h6" strokeLinecap="round"/>
@@ -186,15 +199,15 @@ export default function DashboardPage() {
               Sort
             </button>
             {sortOpen && (
-              <div className="absolute right-0 mt-1 w-44 bg-white rounded-xl border shadow-lg z-50 overflow-hidden" style={{ borderColor: 'var(--pink-100)' }}>
+              <div className="absolute right-0 mt-1 w-44 bg-white rounded-xl border shadow-lg z-50 overflow-hidden" style={{ borderColor: C.border }}>
                 {[{ label: 'Expiry date', value: 'expiry' }, { label: 'Store name', value: 'store' }].map(s => (
                   <button
                     key={s.value}
                     onClick={() => { setSort(s.value as Sort); setSortOpen(false) }}
                     className="w-full text-left px-4 py-3 text-sm flex items-center justify-between"
-                    style={{ color: sort === s.value ? 'var(--pink-700)' : '#374151', fontWeight: sort === s.value ? 500 : 400, background: 'white' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--pink-50)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'white')}
+                    style={{ color: sort === s.value ? C.active : '#374151', fontWeight: sort === s.value ? 600 : 400, background: C.white }}
+                    onMouseEnter={e => (e.currentTarget.style.background = C.bgHover)}
+                    onMouseLeave={e => (e.currentTarget.style.background = C.white)}
                   >
                     {s.label}
                     {sort === s.value && (
@@ -209,19 +222,20 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Content */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--pink-200)', borderTopColor: 'var(--pink-600)' }} />
+            <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: C.border, borderTopColor: C.active }} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <p className="text-base font-medium" style={{ color: '#6b7280' }}>No deals here</p>
             <button
               onClick={() => setShowAddDeal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors"
-              style={{ background: 'var(--pink-600)' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--pink-700)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--pink-600)')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+              style={{ background: C.active }}
+              onMouseEnter={e => (e.currentTarget.style.background = C.activeHover)}
+              onMouseLeave={e => (e.currentTarget.style.background = C.active)}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
@@ -235,6 +249,8 @@ export default function DashboardPage() {
               <DealCard
                 key={deal.id}
                 deal={deal}
+                userId={userId || ''}
+                accessToken={accessToken || ''}
                 onUpdate={handleUpdate}
                 onRestore={handleRestore}
                 isUsedView={filter === 'used'}
@@ -244,9 +260,9 @@ export default function DashboardPage() {
               <button
                 onClick={() => setShowAddDeal(true)}
                 className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed min-h-48 transition-colors"
-                style={{ borderColor: 'var(--pink-200)', color: 'var(--pink-400)', background: 'transparent' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--pink-50)'; e.currentTarget.style.borderColor = 'var(--pink-300)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--pink-200)' }}
+                style={{ borderColor: C.border, color: C.textLight, background: 'transparent' }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.bgHover; e.currentTarget.style.borderColor = C.active }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = C.border }}
               >
                 <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M12 5v14M5 12h14" strokeLinecap="round"/>

@@ -7,8 +7,16 @@ const supabase = createClient(
 )
 
 export async function POST(req: NextRequest) {
-  const { userId, parsed, imageUrl } = await req.json()
-  if (!userId || !parsed) return NextResponse.json({ error: 'Missing data' }, { status: 400 })
+  const { userId, parsed, imageUrl, accessToken } = await req.json()
+  if (!userId || !parsed || !accessToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Verify token
+  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+  if (authError || !user || user.id !== userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const { data, error } = await supabase.from('discounts').insert({
     user_id: userId,

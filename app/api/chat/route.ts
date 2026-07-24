@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, formatRetryTime } from '@/lib/rate-limit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,7 +8,23 @@ const supabase = createClient(
 )
 
 export async function POST(req: NextRequest) {
-  const { message, userId } = await req.json()
+  const { message, userId, accessToken } = await req.json()
+  if (!message || !userId || !accessToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+  if (authError || !user || user.id !== userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { allowed, retryAfterMs } = rateLimit(`chat:${userId}`, 20, 60 * 60 * 1000)
+  if (!allowed) {
+    return NextResponse.json({
+      error: `You have reached the chat limit. Try again in ${formatRetryTime(retryAfterMs)}.`,
+      retryAfterMs,
+    }, { status: 429 })
+  }
 
   const { data: deals } = await supabase
     .from('discounts')
@@ -21,9 +38,8 @@ export async function POST(req: NextRequest) {
 
   const today = new Date().toISOString().split('T')[0]
   const active = deals.filter((d: any) => !d.expiry_date || d.expiry_date >= today)
-  const allExpired = active.length === 0
 
-  if (allExpired) {
+  if (active.length === 0) {
     return NextResponse.json({ reply: 'None, they all expired.', deals: [] })
   }
 
@@ -57,10 +73,7 @@ Today is ${today}. Return ONLY a JSON array of deal IDs that match. If asking ab
   } catch { ids = active.map((d: any) => d.id) }
 
   const matched = active.filter((d: any) => ids.includes(d.id))
-
-  if (matched.length === 0) {
-    return NextResponse.json({ reply: 'None.', deals: [] })
-  }
+  if (matched.length === 0) return NextResponse.json({ reply: 'None.', deals: [] })
 
   return NextResponse.json({ reply: `Found ${matched.length} deal${matched.length > 1 ? 's' : ''}:`, deals: matched })
 }

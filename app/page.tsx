@@ -15,8 +15,8 @@ export default function Home() {
   }, [router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--pink-50)' }}>
-      <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--pink-200)', borderTopColor: 'var(--pink-600)' }} />
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--p50)' }}>
+      <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--p200)', borderTopColor: 'var(--p600)' }} />
     </div>
   )
 }

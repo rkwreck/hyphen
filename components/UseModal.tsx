@@ -1,10 +1,13 @@
 'use client'
 import { useState, useRef } from 'react'
 import type { Discount } from '@/lib/types'
+import Toast from '@/components/Toast'
 
 interface Props {
   deal: Discount
   isDollar: boolean
+  userId: string
+  accessToken: string
   onClose: () => void
   onConfirm: (savedAmount: number | null) => void
 }
@@ -12,12 +15,13 @@ interface Props {
 type Tab = 'upload' | 'manual'
 type Stage = 'input' | 'parsed'
 
-export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) {
+export default function UseModal({ deal, isDollar, userId, accessToken, onClose, onConfirm }: Props) {
   const [tab, setTab] = useState<Tab>('upload')
   const [stage, setStage] = useState<Stage>('input')
   const [before, setBefore] = useState('')
   const [after, setAfter] = useState('')
   const [parsing, setParsing] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null)
   const [parsedSaved, setParsedSaved] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -30,9 +34,16 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
     formData.append('receipt', file)
     formData.append('dealId', deal.id)
     formData.append('discountValue', deal.discount_value || '')
+    formData.append('userId', userId)
+    formData.append('accessToken', accessToken)
     try {
       const res = await fetch('/api/parse-receipt', { method: 'POST', body: formData })
       const data = await res.json()
+      if (res.status === 429) {
+        setToast({ message: `Oops! ${data.error}`, type: 'error' })
+        setParsing(false)
+        return
+      }
       setParsedSaved(data.saved)
       setStage('parsed')
     } catch {
@@ -49,14 +60,16 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
   }
 
   return (
-    <div
+    <>
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+      <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.4)' }}
       onClick={onClose}
     >
       <div
         className="bg-white rounded-2xl p-6 w-full max-w-sm border"
-        style={{ borderColor: 'var(--pink-100)' }}
+        style={{ borderColor: 'var(--p100)' }}
         onClick={e => e.stopPropagation()}
       >
         <h2 className="font-semibold text-base mb-1">Using: {deal.store_name}</h2>
@@ -75,8 +88,8 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
                   onClick={() => setTab(t)}
                   className="flex-1 py-2 rounded-xl text-xs font-medium border"
                   style={tab === t
-                    ? { background: 'var(--pink-600)', color: 'white', borderColor: 'var(--pink-600)' }
-                    : { background: 'white', color: 'var(--pink-700)', borderColor: 'var(--pink-200)' }}
+                    ? { background: 'var(--p600)', color: 'white', borderColor: 'var(--p600)' }
+                    : { background: 'white', color: 'var(--p700)', borderColor: 'var(--p200)' }}
                 >
                   {t === 'upload' ? 'Upload receipt' : 'Enter manually'}
                 </button>
@@ -90,14 +103,14 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
                 <div
                   onClick={() => fileRef.current?.click()}
                   className="rounded-xl p-6 text-center cursor-pointer mb-4 border-2 border-dashed"
-                  style={{ borderColor: 'var(--pink-200)', background: 'var(--pink-50)' }}
+                  style={{ borderColor: 'var(--p200)', background: 'var(--p50)' }}
                 >
                   {parsing ? (
-                    <p className="text-sm font-medium" style={{ color: 'var(--pink-500)' }}>Parsing receipt...</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--p500)' }}>Parsing receipt...</p>
                   ) : (
                     <>
-                      <i className="ti ti-receipt" style={{ fontSize: 32, color: 'var(--pink-300)', display: 'block', marginBottom: 6 }} aria-hidden="true" />
-                      <p className="text-sm font-medium" style={{ color: 'var(--pink-500)' }}>Tap to upload receipt</p>
+                      <i className="ti ti-receipt" style={{ fontSize: 32, color: 'var(--p300)', display: 'block', marginBottom: 6 }} aria-hidden="true" />
+                      <p className="text-sm font-medium" style={{ color: 'var(--p500)' }}>Tap to upload receipt</p>
                       <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>JPG, PNG, or PDF</p>
                     </>
                   )}
@@ -116,10 +129,10 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
                   <input type="number" value={after} onChange={e => setAfter(e.target.value)} placeholder="e.g. 38.00" className="w-full" />
                 </div>
                 {validManual && (
-                  <div className="rounded-xl p-3 text-center" style={{ background: 'var(--pink-50)', border: '1px solid var(--pink-200)' }}>
+                  <div className="rounded-xl p-3 text-center" style={{ background: 'var(--p50)', border: '1px solid var(--p200)' }}>
                     <p className="text-xs" style={{ color: '#9ca3af' }}>Discount used</p>
-                    <p className="text-xl font-bold" style={{ color: 'var(--pink-700)' }}>${saved!.toFixed(2)}</p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--pink-500)' }}>
+                    <p className="text-xl font-bold" style={{ color: 'var(--p700)' }}>${saved!.toFixed(2)}</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--p500)' }}>
                       {isDollar && deal.discount_value
                         ? (() => {
                             const orig = parseFloat(deal.discount_value.replace(/[^0-9.]/g, ''))
@@ -136,12 +149,12 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
         )}
 
         {stage === 'parsed' && (
-          <div className="rounded-xl p-4 text-center mb-4" style={{ background: 'var(--pink-50)', border: '1px solid var(--pink-200)' }}>
+          <div className="rounded-xl p-4 text-center mb-4" style={{ background: 'var(--p50)', border: '1px solid var(--p200)' }}>
             <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>Parsed from receipt</p>
-            <p className="text-xl font-bold" style={{ color: 'var(--pink-700)' }}>
+            <p className="text-xl font-bold" style={{ color: 'var(--p700)' }}>
               {parsedSaved !== null ? `$${parsedSaved.toFixed(2)} saved` : 'Could not parse'}
             </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--pink-500)' }}>
+            <p className="text-xs mt-1" style={{ color: 'var(--p500)' }}>
               {isDollar ? 'Full amount used — moving to archive' : 'Discount fully used — moving to archive'}
             </p>
           </div>
@@ -155,12 +168,13 @@ export default function UseModal({ deal, isDollar, onClose, onConfirm }: Props) 
             onClick={handleConfirm}
             disabled={tab === 'manual' && stage === 'input' && !validManual}
             className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white"
-            style={{ background: (tab === 'manual' && stage === 'input' && !validManual) ? 'var(--pink-200)' : 'var(--pink-600)' }}
+            style={{ background: (tab === 'manual' && stage === 'input' && !validManual) ? 'var(--p200)' : 'var(--p600)' }}
           >
             Confirm
           </button>
         </div>
       </div>
     </div>
+    </>
   )
 }

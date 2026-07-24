@@ -3,28 +3,31 @@
 @tailwind utilities;
 
 :root {
-  --pink-50:  #FDF2F8;
-  --pink-100: #FCE7F3;
-  --pink-200: #FBCFE8;
-  --pink-300: #F9A8D4;
-  --pink-400: #F472B6;
-  --pink-500: #EC4899;
-  --pink-600: #DB2777;
-  --pink-700: #BE185D;
-  --pink-800: #9D174D;
+  --p50:  #f5eefe;
+  --p100: #ead9fc;
+  --p200: #d4aff8;
+  --p300: #b87af2;
+  --p400: #a855f7;
+  --p500: #9333ea;
+  --p600: #7e22ce;
+  --p700: #6b21a8;
+  --p800: #581c87;
+  --p900: #3b0764;
+
+  --accent: #be66ed;
 }
 
 * { box-sizing: border-box; }
 
 body {
-  background: var(--pink-50);
+  background: var(--p50);
   color: #1a1a1a;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
 input, textarea {
   outline: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--p200);
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 14px;
@@ -34,5 +37,5 @@ input, textarea {
   color: #1a1a1a;
 }
 input:focus, textarea:focus {
-  border-color: var(--pink-400);
+  border-color: var(--p400);
 }

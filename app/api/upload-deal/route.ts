@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, formatRetryTime } from '@/lib/rate-limit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,14 +11,33 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData()
   const file = formData.get('image') as File
   const userId = formData.get('userId') as string
+  const accessToken = formData.get('accessToken') as string
 
-  if (!file || !userId) return NextResponse.json({ error: 'Missing data' }, { status: 400 })
+  if (!file || !userId || !accessToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken)
+  if (authError || !user || user.id !== userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { allowed, retryAfterMs } = rateLimit(`upload:${userId}`, 30, 24 * 60 * 60 * 1000)
+  if (!allowed) {
+    return NextResponse.json({
+      error: `You have reached the daily upload limit. Try again in ${formatRetryTime(retryAfterMs)}.`,
+      retryAfterMs,
+    }, { status: 429 })
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Image too large. Please upload an image under 10MB.' }, { status: 400 })
+  }
 
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
   const mimeType = file.type || 'image/jpeg'
 
-  // Upload image to storage
   const fileName = `${userId}/${Date.now()}.jpg`
   const { error: uploadError } = await supabase.storage
     .from('deal-images')
@@ -25,7 +45,6 @@ export async function POST(req: NextRequest) {
 
   const imageUrl = uploadError ? null : supabase.storage.from('deal-images').getPublicUrl(fileName).data.publicUrl
 
-  // Parse with Gemini
   const geminiRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {

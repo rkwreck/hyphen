@@ -33,13 +33,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--pink-50)' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--p50)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold" style={{ color: 'var(--pink-700)' }}>Hyphen</h1>
+          <h1 className="text-3xl font-semibold" style={{ color: 'var(--p600)' }}>Hyphen</h1>
           <p className="text-sm mt-1" style={{ color: '#6b7280' }}>Your personal deal keeper</p>
         </div>
-        <div className="bg-white rounded-2xl p-8 border" style={{ borderColor: 'var(--pink-100)' }}>
+        <div className="bg-white rounded-2xl p-8 border" style={{ borderColor: 'var(--p200)' }}>
           <h2 className="text-lg font-medium mb-6">Sign in</h2>
           {error && <p className="text-sm mb-4 p-3 rounded-lg" style={{ background: '#FEF2F2', color: '#991B1B' }}>{error}</p>}
           <button onClick={handleGoogle} className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border text-sm font-medium mb-4" style={{ borderColor: '#e5e7eb', color: '#374151' }}>
@@ -65,13 +65,13 @@ export default function LoginPage() {
               <label className="text-sm font-medium mb-1 block" style={{ color: '#374151' }}>Password</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
             </div>
-            <button type="submit" className="w-full py-2.5 rounded-xl text-sm font-medium text-white mt-1" style={{ background: 'var(--pink-600)' }} disabled={loading}>
+            <button type="submit" className="w-full py-2.5 rounded-xl text-sm font-medium text-white mt-1" style={{ background: 'var(--p600)' }} disabled={loading}>
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
           <p className="text-sm text-center mt-6" style={{ color: '#6b7280' }}>
             No account?{' '}
-            <Link href="/signup" style={{ color: 'var(--pink-600)', fontWeight: 500 }}>Sign up</Link>
+            <Link href="/signup" style={{ color: 'var(--p600)', fontWeight: 500 }}>Sign up</Link>
           </p>
         </div>
       </div>
