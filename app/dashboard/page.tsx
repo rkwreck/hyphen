@@ -96,6 +96,10 @@ export default function DashboardPage() {
     setShowAddDeal(false)
   }
 
+  function handleEdit(updated: Discount) {
+    setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))
+  }
+
   const filtered = deals
     .filter(d => {
       if (filter === 'used') return d.is_used
@@ -253,6 +257,7 @@ export default function DashboardPage() {
                 accessToken={accessToken || ''}
                 onUpdate={handleUpdate}
                 onRestore={handleRestore}
+                onEdit={handleEdit}
                 isUsedView={filter === 'used'}
               />
             ))}
